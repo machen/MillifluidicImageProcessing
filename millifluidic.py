@@ -1,6 +1,8 @@
 # Code to process images. Should be run from command line targetting a specific folder
 
-import sys, os, re
+import sys
+import os
+import re
 from argparse import ArgumentParser
 import numpy as np
 import skimage as sk
@@ -32,18 +34,23 @@ def imageProcess(item) -> dict:
     thresh = threshold_otsu(image)
     mask = image > thresh
     label_img = label(mask)
+    footprint = sk.morphology.disk(3)
+    res = sk.morphology.white_tophat(mask, footprint)
     fullProps = sk.measure.regionprops(label_img, intensity_image=image)
     fig, ax = plt.subplots()
     # Plotting to show the image,
     # TODO: Should be a flag to plot
     # TODO: What do we do with the masked images?
     # TODO: Need to filter out small objects, consider sk.morphology.white_tophat()
-    ax.imshow(mask, cmap=plt.cm.gray)
-    for props in fullProps:
-        equivCircRad = np.sqrt(props.area)/np.pi
-        y0, x0 = props.centroid
-        circle = plt.Circle((x0,y0), equivCircRad, color='r',alpha=0.3)
-        ax.add_patch(circle)
+    ax.imshow(image, cmap=plt.cm.gray)
+    fig2, ax2 = plt.subplots()
+    ax2.imshow(image-res, cmap='gray')
+    # for props in fullProps:
+    #     equivCircRad = np.sqrt(props.area)/np.pi
+    #     y0, x0 = props.centroid
+    #     circle = plt.Circle((x0, y0), equivCircRad, color='r',alpha=0.3)
+    #     ax.add_patch(circle)
+    plt.show()
     return fullProps
 
 
