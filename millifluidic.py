@@ -12,6 +12,40 @@ from skimage.measure import label, regionprops_table
 import matplotlib.pyplot as plt
 
 
+def generateDiffIm(images, initImageKey=0, threshold=1) -> np.ndarray:
+    """ Adapted from code by Marcel Moura @ PoreLab - UiO (09/2022) code for fluid invasion image processing.
+
+    Parameters
+    ---------
+    images: Dict with keys of index and an associated thresholded image (np.array) of the same size and shape.
+    initImageKey: Index of the image which should be considered intial. Default value is 0.
+    threshold: Optional int that specifies the threshold for considering an image different from the initial. Deafult of 1 presumes binary images.
+
+    Returns
+    ------
+    diffIm: numpy array where the values indicate the image index at which there first a difference
+    """
+    initImage = images[initImageKey]
+    diffIm = np.zeros(initImage.shape())
+    for index, image in images.index():
+        # Area where the image has changed from initial
+        diff = (image-initImage) >= threshold
+        # Area of image that has not yet changed
+        diffImDelta = diffIm == 0
+        # Element-wise AND of the above set to index of the image
+        diffIm[np.logical_and(diff, diffImDelta)] = index
+    return diffIm
+
+
+def setImageCrop(baseImage) -> tuple(int,int,int,int):
+    # TODO: Should use some other criteria to crop the image, such as user input on a test figure
+    x1 = 0
+    y1 = 0
+    x2 = baseImage.shape[1] # np.arrays are [row,col]
+    y2 = baseImage.shape[0]
+    return x1, y1, x2, y2
+
+
 def scanImages(folderName, fileExt,
                nameFilter, imageList) -> tuple[list, np.array]:
     """ Scan through image names in folderName with file
@@ -31,6 +65,7 @@ def imageProcess(item) -> dict:
     image = imread(item, as_gray=True)
     # TODO: Should decide on correct thresholding algorithm
     # Images may need multiple thresholds to delineate surface vs bottom
+    # TODO: May also want to do image registration to detect if the image has moved at all
     thresh = threshold_otsu(image)
     mask = image > thresh
     label_img = label(mask)
