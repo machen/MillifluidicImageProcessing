@@ -6,8 +6,8 @@ listOfimages = dir([directory_imges,'*.png']);
 
 %% here we batch process the images
 
-sz=size([2064, 2464]) %% size is a vector [height width]
-invadingmatrix = zeros(sz);
+sz=size([2064, 2464]) %% size is a matrix [height width] corresponding to the image
+invadingmatrix = zeros(sz);  %% Resulting image where number corresponds to which image at which invasion first occurs
 current_invaded_zone = zeros(sz);
 
 
@@ -27,11 +27,14 @@ x=[directory_imges,image_name];
 Img=imread(x);
 Img=Img(:,:,1);
 
-
+% MACHEN: Segment image difference from initial based on a threshold value
 Img_dif=double(Img)-double(Imgini);
-
 Img_dif(Img_dif<threshold)=0;
 Img_dif(Img_dif>=threshold)=1;
+
+% MACHEN: Assign area of invading matrix based on:
+% 1) What has changed from initial
+% 2) What has not already changed
 
 invadingmatrix(Img_dif~=0&invadingmatrix==0)=img_number;
 end
