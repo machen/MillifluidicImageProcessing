@@ -27,8 +27,9 @@ def generateDiffIm(images, initImageKey=0, threshold=1) -> np.ndarray:
     diffIm: numpy array where the values indicate the image index at which there first a difference
     """
     initImage = images[initImageKey]
-    diffIm = np.zeros(initImage.shape())
-    for index, image in images.index():
+    diffIm = np.zeros(initImage.shape)
+    for index in sorted(images.keys()):
+        image = images[index]
         # Area where the image has changed from initial
         diff = (image-initImage) >= threshold
         # Area of image that has not yet changed
@@ -48,7 +49,7 @@ def setImageCrop(baseImage) -> tuple[int, int, int, int]:
 
 
 def createImageList(folderName, fileExt,
-                    nameFilter) -> list:
+                    nameFilter) -> dict:
     """ Scan through image names in folderName with file
     extension fileExt and matching pattern nameFilter
 
@@ -60,52 +61,63 @@ def createImageList(folderName, fileExt,
 
     Returns
     --------
-    imageList: List of image names that meet the name and extension filter
+    imageList: Dict of images matching the filter, indexed by the group specified in nameFilter
     """
-    imageList = []
+    imageList = {}
     filePat = re.compile(nameFilter)
     for item in os.listdir(folderName):
         # Filter on filePat and extension
-        # TODO: Should handle passing no nameFilter
-        if re.match(filePat, item) and item.endswith(fileExt):
-            imageList.append(item)
-    return sorted(imageList)
+        # TODO: Should handle passing no nameFilter and cases with multiple matching indices
+        match = re.match(filePat, item)
+        if match and item.endswith(fileExt):
+            index = match.group(1)
+            imageList[int(index)] = item
+    return imageList
 
-
-def imageProcess(image) -> tuple[dict, np.ndarray]:
+def imageProcess(image):
     # TODO: Should decide on correct thresholding algorithm
     # Images may need multiple thresholds to delineate surface vs bottom
     # TODO: May also want to do image registration to detect if the image has moved at all
     thresh = threshold_isodata(image)
     mask = image > thresh
-    label_img = label(mask)
-    footprint = disk(10)
-    res = white_tophat(mask, footprint)
-    fullProps = sk.measure.regionprops(label_img, intensity_image=image)
-    fig, ax = plt.subplots()
-    # Plotting to show the image,
-    # TODO: Should be a flag to plot
-    # TODO: What do we do with the masked images?
-    # TODO: Need to filter out small objects, consider sk.morphology.white_tophat()
-    ax.imshow(res, cmap='gray')
-    fig2, ax2 = plt.subplots()
-    ax2.imshow(image-res > thresh, cmap='gray')
-    # for props in fullProps:
-    #     equivCircRad = np.sqrt(props.area)/np.pi
-    #     y0, x0 = props.centroid
-    #     circle = plt.Circle((x0, y0), equivCircRad, color='r',alpha=0.3)
-    #     ax.add_patch(circle)
-    plt.show()
-    return fullProps
+    # label_img = label(mask)
+    # footprint = disk(10)
+    # res = white_tophat(mask, footprint)
+    # fullProps = sk.measure.regionprops(label_img, intensity_image=image)
+    # fig, ax = plt.subplots()
+    # # Plotting to show the image,
+    # # TODO: Should be a flag to plot
+    # # TODO: What do we do with the masked images?
+    # # TODO: Need to filter out small objects, consider sk.morphology.white_tophat()
+    # ax.imshow(res, cmap='gray')
+    # fig2, ax2 = plt.subplots()
+    # ax2.imshow(image-res > thresh, cmap='gray')
+    # # for props in fullProps:
+    # #     equivCircRad = np.sqrt(props.area)/np.pi
+    # #     y0, x0 = props.centroid
+    # #     circle = plt.Circle((x0, y0), equivCircRad, color='r',alpha=0.3)
+    # #     ax.add_patch(circle)
+    # plt.show()
+    maskOut = np.array(mask, dtype='uint16')
+    return maskOut
 
 
 def main(args) -> int:
     imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
     props = {}
-    for imFile in imageList:
+    images = {}
+    for index, imFile in imageList.items():
         print(imFile)
+        # TODO: This is really hacky and I need a better way to specify the first image
         image = imread(args.folderName+os.sep+imFile, as_gray=True)
-        props[imFile] = imageProcess(image)
+        images[index] = imageProcess(image)
+        # images[imFile] =
+
+    diffIm = generateDiffIm(images, initImageKey=1)
+    fig, ax = plt.subplots()
+    plt.imshow(diffIm, cmap='turbo')
+    plt.colorbar()
+    plt.show()
     return 0
 
 
@@ -115,6 +127,7 @@ if __name__ == '__main__':
                             epilog='Currently in development')
     parser.add_argument('folderName')
     parser.add_argument('fileExt')
+    # TODO: You should either specify a name filter which has a regex group that the index is drawn from, and needs to specify the index or a file which gives the indices explicitly
     parser.add_argument('nameFilter')
     parser.add_argument('-c', '--cropImage', nargs=4)
     args = parser.parse_args()
