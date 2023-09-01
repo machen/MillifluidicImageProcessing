@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "args":["TestData",".png","image_([0-9]*)"],
+            "args":["TestData",".png","image_([0-9]*)","-c", "300", "300", "1500", "1500"],
             "console": "integratedTerminal",
             "justMyCode": true
         }

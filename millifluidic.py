@@ -46,6 +46,14 @@ def setImageCrop(baseImage) -> tuple[int, int, int, int]:
     return x1, y1, x2, y2
 
 
+def cropImage(image, coords):
+    x1 = coords[0]
+    y1 = coords[1]
+    x2 = coords[2]
+    y2 = coords[3]
+    return image[x1:x2, y1:y2]
+
+
 def createImageList(folderName, fileExt,
                     nameFilter) -> dict:
     """ Scan through image names in folderName with file
@@ -79,7 +87,7 @@ def imageProcess(image):
     # TODO: May also want to do image registration to detect if the image has moved at all
     thresh = threshold_isodata(image)
     mask = image > thresh
-    # label_img = label(mask)
+    label_img = label(mask)
     # footprint = disk(10)
     # res = white_tophat(mask, footprint)
     # fullProps = sk.measure.regionprops(label_img, intensity_image=image)
@@ -88,7 +96,7 @@ def imageProcess(image):
     # # TODO: Should be a flag to plot
     # # TODO: What do we do with the masked images?
     # # TODO: Need to filter out small objects, consider sk.morphology.white_tophat()
-    # ax.imshow(res, cmap='gray')
+    # ax.imshow(label_img, cmap='gray')
     # fig2, ax2 = plt.subplots()
     # ax2.imshow(image-res > thresh, cmap='gray')
     # # for props in fullProps:
@@ -105,12 +113,16 @@ def main(args) -> int:
     imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
     initImage = imageProcess(imread(args.folderName+os.sep+imageList[1],
                                     as_gray=True))
+    if args.cropImage:
+        initImage = cropImage(initImage, args.cropImage)
     diffImage = np.zeros(initImage.shape)
     for index in sorted(imageList.keys()):
         imFile = imageList[index]
         print(imFile)
         # TODO: This is really hacky and I need a better way to specify the first image and image sequence
         image = imread(args.folderName+os.sep+imFile, as_gray=True)
+        if args.cropImage:
+            image = cropImage(image, args.cropImage)
         threshIm = imageProcess(image)
         # images[imFile] =
         diffImage = generateDiffIm(index, threshIm, diffImage, initImage)
@@ -129,6 +141,7 @@ if __name__ == '__main__':
     parser.add_argument('fileExt')
     # TODO: You should either specify a name filter which has a regex group that the index is drawn from, and needs to specify the index or a file which gives the indices explicitly
     parser.add_argument('nameFilter')
-    parser.add_argument('-c', '--cropImage', nargs=4)
+    parser.add_argument('-c', '--cropImage', nargs=4, type=int)
+    parser.add_argument('-f', '--inputFile', type=str)
     args = parser.parse_args()
     sys.exit(main(args))
