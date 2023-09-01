@@ -103,12 +103,13 @@ def imageProcess(image):
 
 def main(args) -> int:
     imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
-    initImage = imageProcess(imread(args.folderName+os.sep+imageList[1], as_gray=True))
+    initImage = imageProcess(imread(args.folderName+os.sep+imageList[1],
+                                    as_gray=True))
     diffImage = np.zeros(initImage.shape)
     for index in sorted(imageList.keys()):
         imFile = imageList[index]
         print(imFile)
-        # TODO: This is really hacky and I need a better way to specify the first image
+        # TODO: This is really hacky and I need a better way to specify the first image and image sequence
         image = imread(args.folderName+os.sep+imFile, as_gray=True)
         threshIm = imageProcess(image)
         # images[imFile] =
