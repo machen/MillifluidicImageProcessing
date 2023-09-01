@@ -7,8 +7,9 @@ from argparse import ArgumentParser
 import numpy as np
 import skimage as sk
 from skimage.io import imread
-from skimage.filters import threshold_otsu
+from skimage.filters import threshold_isodata
 from skimage.measure import label, regionprops_table
+from skimage.morphology import disk, white_tophat
 import matplotlib.pyplot as plt
 
 
@@ -37,7 +38,7 @@ def generateDiffIm(images, initImageKey=0, threshold=1) -> np.ndarray:
     return diffIm
 
 
-def setImageCrop(baseImage) -> tuple(int,int,int,int):
+def setImageCrop(baseImage) -> tuple[int, int, int, int]:
     # TODO: Should use some other criteria to crop the image, such as user input on a test figure
     x1 = 0
     y1 = 0
@@ -46,40 +47,49 @@ def setImageCrop(baseImage) -> tuple(int,int,int,int):
     return x1, y1, x2, y2
 
 
-def scanImages(folderName, fileExt,
-               nameFilter, imageList) -> tuple[list, np.array]:
+def createImageList(folderName, fileExt,
+                    nameFilter) -> list:
     """ Scan through image names in folderName with file
-    extension fileExt and matching pattern nameFilter"""
+    extension fileExt and matching pattern nameFilter
+
+    Parameters
+    ---------
+    folderName: Folder to scan
+    fileExt: File extenstion for the files to include
+    nameFilter: regex expression for filtering out which files to use
+
+    Returns
+    --------
+    imageList: List of image names that meet the name and extension filter
+    """
+    imageList = []
     filePat = re.compile(nameFilter)
-    os.chdir(folderName) # move to working directory
-    for item in os.listdir('.'):
+    for item in os.listdir(folderName):
         # Filter on filePat and extension
         # TODO: Should handle passing no nameFilter
         if re.match(filePat, item) and item.endswith(fileExt):
             imageList.append(item)
-            imageProcess(item)
-    return imageList
+    return sorted(imageList)
 
 
-def imageProcess(item) -> dict:
-    image = imread(item, as_gray=True)
+def imageProcess(image) -> tuple[dict, np.ndarray]:
     # TODO: Should decide on correct thresholding algorithm
     # Images may need multiple thresholds to delineate surface vs bottom
     # TODO: May also want to do image registration to detect if the image has moved at all
-    thresh = threshold_otsu(image)
+    thresh = threshold_isodata(image)
     mask = image > thresh
     label_img = label(mask)
-    footprint = sk.morphology.disk(3)
-    res = sk.morphology.white_tophat(mask, footprint)
+    footprint = disk(10)
+    res = white_tophat(mask, footprint)
     fullProps = sk.measure.regionprops(label_img, intensity_image=image)
     fig, ax = plt.subplots()
     # Plotting to show the image,
     # TODO: Should be a flag to plot
     # TODO: What do we do with the masked images?
     # TODO: Need to filter out small objects, consider sk.morphology.white_tophat()
-    ax.imshow(image, cmap=plt.cm.gray)
+    ax.imshow(res, cmap='gray')
     fig2, ax2 = plt.subplots()
-    ax2.imshow(image-res, cmap='gray')
+    ax2.imshow(image-res > thresh, cmap='gray')
     # for props in fullProps:
     #     equivCircRad = np.sqrt(props.area)/np.pi
     #     y0, x0 = props.centroid
@@ -90,8 +100,12 @@ def imageProcess(item) -> dict:
 
 
 def main(args) -> int:
-    imageList = []
-    scanImages(args.folderName, args.fileExt, args.nameFilter, imageList)
+    imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
+    props = {}
+    for imFile in imageList:
+        print(imFile)
+        image = imread(args.folderName+os.sep+imFile, as_gray=True)
+        props[imFile] = imageProcess(image)
     return 0
 
 
@@ -102,5 +116,6 @@ if __name__ == '__main__':
     parser.add_argument('folderName')
     parser.add_argument('fileExt')
     parser.add_argument('nameFilter')
+    parser.add_argument('-c', '--cropImage', nargs=4)
     args = parser.parse_args()
     sys.exit(main(args))
