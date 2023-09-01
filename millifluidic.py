@@ -13,30 +13,28 @@ from skimage.morphology import disk, white_tophat
 import matplotlib.pyplot as plt
 
 
-def generateDiffIm(images, initImageKey=0, threshold=1) -> np.ndarray:
+def generateDiffIm(index, image, diffImage, initImage, threshold=1) -> np.ndarray:
     """ Adapted from code by Marcel Moura @ PoreLab - UiO (09/2022) code for fluid invasion image processing.
 
     Parameters
     ---------
-    images: Dict with keys of index and an associated thresholded image (np.array) of the same size and shape.
-    initImageKey: Index of the image which should be considered intial. Default value is 0.
+    index: Index of the image you want to do the comparison on, used for color
+    image: Image to do next comparison on
+    diffImage: Current diffImage
+    initImage: Initial image to compare against
     threshold: Optional int that specifies the threshold for considering an image different from the initial. Deafult of 1 presumes binary images.
 
     Returns
     ------
-    diffIm: numpy array where the values indicate the image index at which there first a difference
+    diffIm: Updated diffImage
     """
-    initImage = images[initImageKey]
-    diffIm = np.zeros(initImage.shape)
-    for index in sorted(images.keys()):
-        image = images[index]
-        # Area where the image has changed from initial
-        diff = (image-initImage) >= threshold
-        # Area of image that has not yet changed
-        diffImDelta = diffIm == 0
-        # Element-wise AND of the above set to index of the image
-        diffIm[np.logical_and(diff, diffImDelta)] = index
-    return diffIm
+    # Area where the image has changed from initial
+    diff = (image-initImage) >= threshold
+    # Area of image that has not yet changed
+    diffImDelta = diffImage == 0 # Demarcate areas that have not yet changed
+    # Element-wise AND of the above set to index of the image
+    diffImage[np.logical_and(diff, diffImDelta)] = index
+    return diffImage
 
 
 def setImageCrop(baseImage) -> tuple[int, int, int, int]:
@@ -74,6 +72,7 @@ def createImageList(folderName, fileExt,
             imageList[int(index)] = item
     return imageList
 
+
 def imageProcess(image):
     # TODO: Should decide on correct thresholding algorithm
     # Images may need multiple thresholds to delineate surface vs bottom
@@ -104,18 +103,18 @@ def imageProcess(image):
 
 def main(args) -> int:
     imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
-    props = {}
-    images = {}
-    for index, imFile in imageList.items():
+    initImage = imageProcess(imread(args.folderName+os.sep+imageList[1], as_gray=True))
+    diffImage = np.zeros(initImage.shape)
+    for index in sorted(imageList.keys()):
+        imFile = imageList[index]
         print(imFile)
         # TODO: This is really hacky and I need a better way to specify the first image
         image = imread(args.folderName+os.sep+imFile, as_gray=True)
-        images[index] = imageProcess(image)
+        threshIm = imageProcess(image)
         # images[imFile] =
-
-    diffIm = generateDiffIm(images, initImageKey=1)
+        diffImage = generateDiffIm(index, threshIm, diffImage, initImage)
     fig, ax = plt.subplots()
-    plt.imshow(diffIm, cmap='turbo')
+    plt.imshow(diffImage, cmap='turbo')
     plt.colorbar()
     plt.show()
     return 0
