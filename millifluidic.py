@@ -11,6 +11,7 @@ from skimage.filters import threshold_isodata
 from skimage.measure import label, regionprops_table
 from skimage.morphology import disk, white_tophat
 import matplotlib.pyplot as plt
+from skimage import feature
 
 
 def generateDiffIm(index, image, diffImage, initImage, threshold=1) -> np.ndarray:
@@ -90,6 +91,19 @@ def createImageList(folderName, fileExt,
     return imageList
 
 
+def detectAndPlotEdges(image, sigma):
+    """ Function used to test out edge finding on images.
+    Didn't work well due to high noise in our images
+    """
+    edge = feature.canny(image, sigma=sigma)
+    print(edge)
+    f, ax = plt.subplots(nrows=1, ncols=2)
+    ax[0].imshow(image, cmap='gray')
+    ax[1].imshow(edge, cmap='turbo')
+    ax[1].set_title("Edge plot")
+    return edge
+
+
 def imageProcess(image):
     # TODO: Should decide on correct thresholding algorithm
     # Images may need multiple thresholds to delineate surface vs bottom
@@ -119,6 +133,7 @@ def imageProcess(image):
 
 
 def main(args) -> int:
+    plt.ion()
     imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
     initImage = imageProcess(imread(args.folderName+os.sep+imageList[1],
                                     as_gray=True))
@@ -138,7 +153,6 @@ def main(args) -> int:
     fig, ax = plt.subplots()
     plt.imshow(diffImage, cmap='turbo')
     plt.colorbar()
-    plt.show()
     return 0
 
 
