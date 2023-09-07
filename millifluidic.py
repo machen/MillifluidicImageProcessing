@@ -104,7 +104,7 @@ def detectAndPlotEdges(image, sigma):
     return edge
 
 
-def imageProcess(image):
+def imageProcess(image, plot=False, areaThresh = 500000):
     # TODO: Should decide on correct thresholding algorithm
     # Images may need multiple thresholds to delineate surface vs bottom
     # TODO: May also want to do image registration to detect if the image has moved at all
@@ -113,21 +113,28 @@ def imageProcess(image):
     label_img = label(mask)
     # footprint = disk(10)
     # res = white_tophat(mask, footprint)
-    # fullProps = sk.measure.regionprops(label_img, intensity_image=image)
-    # fig, ax = plt.subplots()
-    # # Plotting to show the image,
-    # # TODO: Should be a flag to plot
-    # # TODO: What do we do with the masked images?
-    # # TODO: Need to filter out small objects, consider sk.morphology.white_tophat()
-    # ax.imshow(label_img, cmap='gray')
-    # fig2, ax2 = plt.subplots()
-    # ax2.imshow(image-res > thresh, cmap='gray')
-    # # for props in fullProps:
-    # #     equivCircRad = np.sqrt(props.area)/np.pi
-    # #     y0, x0 = props.centroid
-    # #     circle = plt.Circle((x0, y0), equivCircRad, color='r',alpha=0.3)
-    # #     ax.add_patch(circle)
-    # plt.show()
+    fullProps = sk.measure.regionprops(label_img, intensity_image=image)
+    selectProps = []
+    for region in fullProps:
+        if region.area > areaThresh:
+            selectProps.append(region)
+    # Also need to filter label_img to give back only the selected regions
+    # Plotting to show the image,
+    # DONE: Should be a flag to plot
+    # TODO: What do we do with the masked images?
+    # TODO: Need to filter out small objects, consider sk.morphology.white_tophat()
+    if plot:
+        fig, ax = plt.subplots(1, 2)
+        ax[0].imshow(image, cmap='gray')
+        ax[0].set_title('Original Image')
+        cb = ax[1].imshow(label_img, cmap='turbo')
+        ax[1].set_title('Label image')
+        fig.colorbar(cb)
+    # for props in fullProps:
+    #     equivCircRad = np.sqrt(props.area)/np.pi
+    #     y0, x0 = props.centroid
+    #     circle = plt.Circle((x0, y0), equivCircRad, color='r',alpha=0.3)
+    #     ax.add_patch(circle)
     maskOut = np.array(mask, dtype='uint16')
     return maskOut
 
@@ -147,7 +154,7 @@ def main(args) -> int:
         image = imread(args.folderName+os.sep+imFile, as_gray=True)
         if args.cropImage:
             image = cropImage(image, args.cropImage)
-        threshIm = imageProcess(image)
+        threshIm = imageProcess(image, True)
         # images[imFile] =
         diffImage = generateDiffIm(index, threshIm, diffImage, initImage)
     fig, ax = plt.subplots()
