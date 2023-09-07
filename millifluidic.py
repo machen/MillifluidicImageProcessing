@@ -54,6 +54,15 @@ def cropImage(image, coords):
     return image[x1:x2, y1:y2]
 
 
+def parseInputFile(inputFile) -> dict:
+    """" Alternative function for generating the image list, should give index and filename, and should be sorted to chronological order.
+
+
+    """
+    imageList = {}
+    return imageList
+
+
 def createImageList(folderName, fileExt,
                     nameFilter) -> dict:
     """ Scan through image names in folderName with file
