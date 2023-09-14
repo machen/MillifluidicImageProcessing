@@ -71,13 +71,16 @@ def parseInputFile(inputFile) -> pd.DataFrame:
 def createImageList(folderName, fileExt,
                     nameFilter) -> pd.DataFrame:
     """ Scan through image names in folderName with file
-    extension fileExt and matching pattern nameFilter
+    extension fileExt and matching pattern nameFilter.
+
+    Requires a name filter which specifies at least one group
+    which is used to match the index
 
     Parameters
     ---------
     folderName: Folder to scan
     fileExt: File extenstion for the files to include
-    nameFilter: regex expression for filtering out which files to use
+    nameFilter: regex expression for filtering out which files to use, must include a group for what the file index is
 
     Returns
     --------
@@ -85,6 +88,8 @@ def createImageList(folderName, fileExt,
     """
     imageList = {}
     filePat = re.compile(nameFilter)
+    if filePat.groups < 1:
+        raise ValueError('nameFilter must include at least one group specifying an index, or use an input file (-f)')
     for item in os.listdir(folderName):
         # Filter on filePat and extension
         # TODO: Should handle passing no nameFilter and cases with multiple matching indices
@@ -161,7 +166,8 @@ def main(args) -> int:
     for index in imageList.index:
         imFile = imageList.loc[index, 'imageFile']
         print(imFile)
-        # TODO: This is really hacky and I need a better way to specify the first image and image sequence
+        # DONE: This is really hacky, need to better specify the first image
+        # First image from input file or smallest index
         image = imread(args.folderName+os.sep+imFile, as_gray=True)
         if args.cropImage:
             image = cropImage(image, args.cropImage)
@@ -188,7 +194,6 @@ if __name__ == '__main__':
                             epilog='Currently in development')
     parser.add_argument('folderName')
     parser.add_argument('fileExt')
-    # TODO: You should either specify a name filter which has a regex group that the index is drawn from, and needs to specify the index or a file which gives the indices explicitly
     parser.add_argument('nameFilter')
     parser.add_argument('-c', '--cropImage', nargs=4, type=int)
     parser.add_argument('-f', '--inputFile', type=str)
