@@ -64,7 +64,7 @@ def parseInputFile(inputFile) -> pd.DataFrame:
     """
     data = pd.read_csv(inputFile, header=0, index_col='index')
     data.sort_values(by='elapsedTime', inplace=True)
-    imageList = data.loc[data.use is True, :]
+    imageList = data.loc[data.use == True, :]
     return imageList
 
 
@@ -81,7 +81,7 @@ def createImageList(folderName, fileExt,
 
     Returns
     --------
-    imageList: Dict of images matching the filter, indexed by the group specified in nameFilter
+    imageList: DataFrame of images matching the filter, index is the number
     """
     imageList = {}
     filePat = re.compile(nameFilter)
@@ -146,8 +146,12 @@ def imageProcess(image, plot=False, areaThresh = 500000):
 
 
 def main(args) -> int:
-    plt.ion()
-    imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
+    if args.inputFile:
+        imageList = parseInputFile(args.inputFile)
+        title = 'Color by elapsed time'
+    else:
+        imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
+        title = 'Color by index'
     firstImage = imageList.loc[imageList.index.min(), 'imageFile']
     initImage = imageProcess(imread(args.folderName+os.sep+firstImage,
                                     as_gray=True))
@@ -163,10 +167,18 @@ def main(args) -> int:
             image = cropImage(image, args.cropImage)
         threshIm = imageProcess(image, False)
         # images[imFile] =
-        diffImage = generateDiffIm(index, threshIm, diffImage, initImage)
+        if args.inputFile:
+            # Color by actual elapsed time if using input file
+            diffImage = generateDiffIm(imageList.loc[index, 'elapsedTime'],
+                                       threshIm, diffImage, initImage)
+        else:
+            # Use index of image as proxy for time otherwise
+            diffImage = generateDiffIm(index, threshIm, diffImage, initImage)
     fig, ax = plt.subplots()
     plt.imshow(diffImage, cmap='turbo')
     plt.colorbar()
+    plt.title(title)
+    plt.show()
     return 0
 
 
