@@ -8,11 +8,13 @@ import numpy as np
 import skimage as sk
 from skimage.io import imread
 from skimage.filters import threshold_isodata
+from skimage.transform import estimate_transform, warp
 from skimage.measure import label, regionprops_table
 from skimage.morphology import disk, white_tophat
 import matplotlib.pyplot as plt
 from skimage import feature
 import pandas as pd
+from skimage.feature import match_descriptors, plot_matches, ORB
 
 
 def generateDiffIm(index, image, diffImage, initImage, threshold=1) -> np.ndarray:
@@ -66,6 +68,34 @@ def parseInputFile(inputFile) -> pd.DataFrame:
     data.sort_values(by='elapsedTime', inplace=True)
     imageList = data.loc[data.use == True, :]
     return imageList
+
+
+def imageAlignment(image1, image2):
+    """Function meant for aligning images DO NOT USE
+    Images should be aligned using FIJI (or already aligned)"""
+    descriptor_extractor = ORB(n_keypoints=20)
+     # Generate Keypoints of first image
+    descriptor_extractor.detect_and_extract(image1)
+    keyPoint1 = descriptor_extractor.keypoints
+    descriptors1 = descriptor_extractor.descriptors
+    # Generate Keypoints of second image
+    descriptor_extractor.detect_and_extract(image2)
+    keyPoint2 = descriptor_extractor.keypoints
+    descriptors2 = descriptor_extractor.descriptors
+
+    matches = match_descriptors(descriptors1, descriptors2, max_ratio=0.8, cross_check=True)
+    src = []
+    dst = []
+    for pair in matches:
+        srcPoint = keyPoint1[pair[0]]
+        src.append(srcPoint)
+        dstPoint = keyPoint2[pair[1]]
+        dst.append(dstPoint)
+    src = np.array(src)
+    dst = np.array(dst)
+    transfEst = estimate_transform('similarity', src, dst)
+    imageOut = warp(image2, transfEst.inverse)
+    return imageOut
 
 
 def createImageList(folderName, fileExt,
@@ -158,11 +188,12 @@ def main(args) -> int:
         imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
         title = 'Color by index'
     firstImage = imageList.loc[imageList.index.min(), 'imageFile']
-    initImage = imageProcess(imread(args.folderName+os.sep+firstImage,
-                                    as_gray=True))
+    initIm = imread(args.folderName+os.sep+firstImage, as_gray=True)
     if args.cropImage:
-        initImage = cropImage(initImage, args.cropImage)
-    diffImage = np.zeros(initImage.shape)
+        initIm = cropImage(initIm, args.cropImage)
+    initThreshIm = imageProcess(initIm)
+    diffImage = np.zeros(initThreshIm.shape)
+    # prevIm = initIm
     for index in imageList.index:
         imFile = imageList.loc[index, 'imageFile']
         print(imFile)
@@ -171,15 +202,17 @@ def main(args) -> int:
         image = imread(args.folderName+os.sep+imFile, as_gray=True)
         if args.cropImage:
             image = cropImage(image, args.cropImage)
+        # image = imageAlignment(image, prevIm)
         threshIm = imageProcess(image, False)
         # images[imFile] =
         if args.inputFile:
             # Color by actual elapsed time if using input file
             diffImage = generateDiffIm(imageList.loc[index, 'elapsedTime'],
-                                       threshIm, diffImage, initImage)
+                                       threshIm, diffImage, initThreshIm)
         else:
             # Use index of image as proxy for time otherwise
-            diffImage = generateDiffIm(index, threshIm, diffImage, initImage)
+            diffImage = generateDiffIm(index, threshIm, diffImage,
+                                       initThreshIm)
     fig, ax = plt.subplots()
     plt.imshow(diffImage, cmap='turbo')
     plt.colorbar(label=title)
