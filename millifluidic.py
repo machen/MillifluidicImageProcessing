@@ -12,6 +12,7 @@ from skimage.measure import label, regionprops_table
 from skimage.morphology import disk, white_tophat
 import matplotlib.pyplot as plt
 from skimage import feature
+import pandas as pd
 
 
 def generateDiffIm(index, image, diffImage, initImage, threshold=1) -> np.ndarray:
@@ -55,17 +56,20 @@ def cropImage(image, coords):
     return image[x1:x2, y1:y2]
 
 
-def parseInputFile(inputFile) -> dict:
-    """" Alternative function for generating the image list, should give index and filename, and should be sorted to chronological order.
+def parseInputFile(inputFile) -> pd.DataFrame:
+    """" Alternative function for generating the image list,
+    should give index and filename, and should be sorted to chronological order.
 
 
     """
-    imageList = {}
+    data = pd.read_csv(inputFile, header=0, index_col='index')
+    data.sort_values(by='elapsedTime', inplace=True)
+    imageList = data.loc[data.use is True, :]
     return imageList
 
 
 def createImageList(folderName, fileExt,
-                    nameFilter) -> dict:
+                    nameFilter) -> pd.DataFrame:
     """ Scan through image names in folderName with file
     extension fileExt and matching pattern nameFilter
 
@@ -88,6 +92,8 @@ def createImageList(folderName, fileExt,
         if match and item.endswith(fileExt):
             index = match.group(1)
             imageList[int(index)] = item
+    imageList = pd.DataFrame.from_dict(imageList, orient='index',
+                                       columns=['imageFile'])
     return imageList
 
 
@@ -142,19 +148,20 @@ def imageProcess(image, plot=False, areaThresh = 500000):
 def main(args) -> int:
     plt.ion()
     imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
-    initImage = imageProcess(imread(args.folderName+os.sep+imageList[1],
+    firstImage = imageList.loc[imageList.index.min(), 'imageFile']
+    initImage = imageProcess(imread(args.folderName+os.sep+firstImage,
                                     as_gray=True))
     if args.cropImage:
         initImage = cropImage(initImage, args.cropImage)
     diffImage = np.zeros(initImage.shape)
-    for index in sorted(imageList.keys()):
-        imFile = imageList[index]
+    for index in imageList.index:
+        imFile = imageList.loc[index, 'imageFile']
         print(imFile)
         # TODO: This is really hacky and I need a better way to specify the first image and image sequence
         image = imread(args.folderName+os.sep+imFile, as_gray=True)
         if args.cropImage:
             image = cropImage(image, args.cropImage)
-        threshIm = imageProcess(image, True)
+        threshIm = imageProcess(image, False)
         # images[imFile] =
         diffImage = generateDiffIm(index, threshIm, diffImage, initImage)
     fig, ax = plt.subplots()
