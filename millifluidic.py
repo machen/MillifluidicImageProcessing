@@ -182,8 +182,7 @@ def main(args) -> int:
             diffImage = generateDiffIm(index, threshIm, diffImage, initImage)
     fig, ax = plt.subplots()
     plt.imshow(diffImage, cmap='turbo')
-    plt.colorbar()
-    plt.title(title)
+    plt.colorbar(label=title)
     plt.show()
     return 0
 
