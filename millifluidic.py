@@ -9,31 +9,33 @@ import skimage as sk
 from skimage.io import imread
 from skimage.filters import threshold_isodata
 from skimage.transform import estimate_transform, warp
-from skimage.measure import label, regionprops_table
-from skimage.morphology import disk, white_tophat
+from skimage.measure import label
 import matplotlib.pyplot as plt
 from skimage import feature
 import pandas as pd
-from skimage.feature import match_descriptors, plot_matches, ORB
+from skimage.feature import match_descriptors, ORB
 
 
-def generateDiffIm(index, image, diffImage, initImage, threshold=1) -> np.ndarray:
+def generateDiffIm(index, image, diffImage, initImage, threshold=50) -> np.ndarray:
     """ Adapted from code by Marcel Moura @ PoreLab - UiO (09/2022) code for fluid invasion image processing.
 
     Parameters
     ---------
     index: Index of the image you want to do the comparison on, used for color
-    image: Image to do next comparison on
+    image: Image to do next comparison on, should be a binary image
     diffImage: Current diffImage
     initImage: Initial image to compare against
-    threshold: Optional int that specifies the threshold for considering an image different from the initial. Deafult of 1 presumes binary images.
+    threshold: Optional int that specifies the threshold for considering an image different from the initial. Only used if the arrays are not boolean
 
     Returns
     ------
     diffIm: Updated diffImage
     """
     # Area where the image has changed from initial
-    diff = (image-initImage) >= threshold
+    if image.dtype == np.dtype('bool'):
+        diff = np.logical_xor(image, initImage)
+    else:
+        diff = (image-initImage) >= threshold
     # Area of image that has not yet changed
     diffImDelta = diffImage == 0 # Demarcate areas that have not yet changed
     # Element-wise AND of the above set to index of the image
@@ -156,7 +158,7 @@ def createImageMask(image) -> np.ndarray:
     return mask
 
 
-def calcImageArea(mask, areaThresh=1000) -> float:
+def calcImageArea(mask, image, areaThresh=1000) -> float:
     label_img = label(mask)
     # footprint = disk(10)
     # res = white_tophat(mask, footprint)
@@ -184,8 +186,8 @@ def main(args) -> int:
     if args.cropImage:
         initIm = cropImage(initIm, args.cropImage)
     # We only care about the initial image to populate what the initial shape should be
-    initialThreshImage = createImageMask(initIm)*initIm
-    diffImage = np.zeros(initialThreshImage[0].shape)
+    initialMaskImage = createImageMask(initIm)
+    diffImage = np.zeros(initialMaskImage.shape)
     areas = []
     times = []
     for index in imageList.index:
@@ -206,16 +208,18 @@ def main(args) -> int:
         imageMask = createImageMask(image)
         threshImage = image*imageMask
         if args.thresholdArea:
-            imageArea = calcImageArea(imageMask, args.thresholdArea)
+            imageArea = calcImageArea(imageMask, image, args.thresholdArea)
         else:
-            imageArea = calcImageArea(imageMask)
+            imageArea = calcImageArea(imageMask, image)
         areas.append(imageArea)
-        diffImage = generateDiffIm(imageTime, threshImage,
-                                   diffImage, initialThreshImage)
+        diffImage = generateDiffIm(imageTime, imageMask,
+                                   diffImage, initialMaskImage)
 
     fig, ax = plt.subplots()
     plt.imshow(diffImage, cmap='turbo')
     plt.colorbar(label=title)
+    fig2, ax2 = plt.subplots()
+    plt.plot(times, areas)
     plt.show()
     fig.savefig(args.folderName+os.sep+'Result.svg', dpi=300)
     np.save(args.folderName+os.sep+'DiffImage.npy', diffImage)

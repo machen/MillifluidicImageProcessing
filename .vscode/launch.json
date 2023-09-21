@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "args":["TestData\\AlignedImages",".png","image_([0-9]*)","-f", "TestData\\AlignedImages\\imageList.csv"],
+            "args":["TestData\\AlignedImages",".png","image_([0-9]*)","-f", "TestData\\AlignedImages\\imageList.csv","-t","50000"],
             "console": "integratedTerminal",
             "justMyCode": true
         }
