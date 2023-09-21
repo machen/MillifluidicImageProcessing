@@ -54,10 +54,11 @@ def setImageCrop(baseImage) -> tuple[int, int, int, int]:
 
 def cropImage(image, coords):
     x1 = coords[0]
-    y1 = coords[1]
-    x2 = coords[2]
+    y1 = coords[2]
+    x2 = coords[1]
     y2 = coords[3]
-    return image[x1:x2, y1:y2]
+    # Arrays are addressed [row, column]
+    return image[y1:y2, x1:x2]
 
 
 def parseInputFile(inputFile) -> pd.DataFrame:
@@ -214,6 +215,15 @@ def main(args) -> int:
         areas.append(imageArea)
         diffImage = generateDiffIm(imageTime, imageMask,
                                    diffImage, initialMaskImage)
+        # Save the mask images. Slow.
+        if args.saveMask:
+            plt.imshow(imageMask)
+            maskFolder = args.folderName+os.sep+'MaskImages'
+            try:
+                os.mkdir(maskFolder)
+            except FileExistsError:
+                pass
+            plt.savefig(maskFolder+os.sep+imFile)
 
     fig, ax = plt.subplots()
     plt.imshow(diffImage, cmap='turbo')
@@ -221,8 +231,11 @@ def main(args) -> int:
     fig2, ax2 = plt.subplots()
     plt.plot(times, areas)
     plt.show()
-    fig.savefig(args.folderName+os.sep+'Result.svg', dpi=300)
+    fig.savefig(args.folderName+os.sep+'Difference Image.svg', dpi=300)
+    fig2.savefig(args.folderName+os.sep+'Areas.svg', dpi=300)
     np.save(args.folderName+os.sep+'DiffImage.npy', diffImage)
+    np.save(args.folderName+os.sep+'elapsedTimes.npy', times)
+    np.save(args.folderName+os.sep+'totalAreas.npy', areas)
     return 0
 
 
@@ -236,5 +249,6 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--cropImage', nargs=4, type=int)
     parser.add_argument('-f', '--inputFile', type=str)
     parser.add_argument('-t', '--thresholdArea', type=int)
+    parser.add_argument('-m', '--saveMask')
     args = parser.parse_args()
     sys.exit(main(args))
