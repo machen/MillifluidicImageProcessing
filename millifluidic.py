@@ -73,6 +73,7 @@ def parseInputFile(inputFile) -> pd.DataFrame:
 def imageAlignment(image1, image2):
     """Function meant for aligning images DO NOT USE
     Images should be aligned using FIJI (or already aligned)"""
+    raise NotImplementedError("Image alignment is too expensive to run on a per-batch basis. Pre-align images.")
     descriptor_extractor = ORB(n_keypoints=20)
      # Generate Keypoints of first image
     descriptor_extractor.detect_and_extract(image1)
@@ -145,56 +146,56 @@ def detectAndPlotEdges(image, sigma):
     return edge
 
 
-def imageProcess(image, plot=False, areaThresh = 500000):
+def createImageMask(image) -> np.ndarray:
     # TODO: Should decide on correct thresholding algorithm
     # Images may need multiple thresholds to delineate surface vs bottom
-    # TODO: May also want to do image registration to detect if the image has moved at all
+    # DONE: May also want to do image registration to detect if the image has moved at all
     thresh = threshold_isodata(image)
     mask = image > thresh
+    # Also need to filter label_img to give back only the selected regions
+    return mask
+
+
+def calcImageArea(mask, areaThresh=1000) -> float:
     label_img = label(mask)
     # footprint = disk(10)
     # res = white_tophat(mask, footprint)
     fullProps = sk.measure.regionprops(label_img, intensity_image=image)
     selectProps = []
+    totalArea = 0
     for region in fullProps:
         if region.area > areaThresh:
             selectProps.append(region)
-    # Also need to filter label_img to give back only the selected regions
-    # Plotting to show the image,
-    # DONE: Should be a flag to plot
-    # TODO: What do we do with the masked images?
-    # TODO: Need to filter out small objects, consider sk.morphology.white_tophat()
-    if plot:
-        fig, ax = plt.subplots(1, 2)
-        ax[0].imshow(image, cmap='gray')
-        ax[0].set_title('Original Image')
-        cb = ax[1].imshow(label_img, cmap='turbo')
-        ax[1].set_title('Label image')
-        fig.colorbar(cb)
-    # for props in fullProps:
-    #     equivCircRad = np.sqrt(props.area)/np.pi
-    #     y0, x0 = props.centroid
-    #     circle = plt.Circle((x0, y0), equivCircRad, color='r',alpha=0.3)
-    #     ax.add_patch(circle)
-    maskOut = np.array(mask, dtype='uint16')
-    return maskOut
+            totalArea += region.area
+    return totalArea
 
 
 def main(args) -> int:
+    plt.rcParams['svg.fonttype'] = 'none'  # Need to output fonts correctly
     if args.inputFile:
         imageList = parseInputFile(args.inputFile)
         title = 'Color by elapsed time'
     else:
-        imageList = createImageList(args.folderName, args.fileExt, args.nameFilter)
+        imageList = createImageList(args.folderName,
+                                    args.fileExt, args.nameFilter)
         title = 'Color by index'
     firstImage = imageList.loc[imageList.index.min(), 'imageFile']
     initIm = imread(args.folderName+os.sep+firstImage, as_gray=True)
     if args.cropImage:
         initIm = cropImage(initIm, args.cropImage)
-    initThreshIm = imageProcess(initIm)
-    diffImage = np.zeros(initThreshIm.shape)
-    # prevIm = initIm
+    # We only care about the initial image to populate what the initial shape should be
+    initialThreshImage = createImageMask(initIm)*initIm
+    diffImage = np.zeros(initialThreshImage[0].shape)
+    areas = []
+    times = []
     for index in imageList.index:
+        if args.inputFile:
+             # Color by actual elapsed time if using input file
+            imageTime = imageList.loc[index, 'elapsedTime']
+        else:
+            # Use index of image as proxy for time otherwise
+            imageTime = index
+        times.append(imageTime)
         imFile = imageList.loc[index, 'imageFile']
         print(imFile)
         # DONE: This is really hacky, need to better specify the first image
@@ -202,21 +203,22 @@ def main(args) -> int:
         image = imread(args.folderName+os.sep+imFile, as_gray=True)
         if args.cropImage:
             image = cropImage(image, args.cropImage)
-        # image = imageAlignment(image, prevIm)
-        threshIm = imageProcess(image, False)
-        # images[imFile] =
-        if args.inputFile:
-            # Color by actual elapsed time if using input file
-            diffImage = generateDiffIm(imageList.loc[index, 'elapsedTime'],
-                                       threshIm, diffImage, initThreshIm)
+        imageMask = createImageMask(image)
+        threshImage = image*imageMask
+        if args.thresholdArea:
+            imageArea = calcImageArea(imageMask, args.thresholdArea)
         else:
-            # Use index of image as proxy for time otherwise
-            diffImage = generateDiffIm(index, threshIm, diffImage,
-                                       initThreshIm)
+            imageArea = calcImageArea(imageMask)
+        areas.append(imageArea)
+        diffImage = generateDiffIm(imageTime, threshImage,
+                                   diffImage, initialThreshImage)
+
     fig, ax = plt.subplots()
     plt.imshow(diffImage, cmap='turbo')
     plt.colorbar(label=title)
     plt.show()
+    fig.savefig(args.folderName+os.sep+'Result.svg', dpi=300)
+    np.save(args.folderName+os.sep+'DiffImage.npy', diffImage)
     return 0
 
 
@@ -229,5 +231,6 @@ if __name__ == '__main__':
     parser.add_argument('nameFilter')
     parser.add_argument('-c', '--cropImage', nargs=4, type=int)
     parser.add_argument('-f', '--inputFile', type=str)
+    parser.add_argument('-t', '--thresholdArea', type=int)
     args = parser.parse_args()
     sys.exit(main(args))
