@@ -176,7 +176,7 @@ def calcImageArea(mask, image, areaThresh=1000) -> float:
 def main(args) -> int:
     plt.rcParams['svg.fonttype'] = 'none'  # Need to output fonts correctly
     if args.inputFile:
-        imageList = parseInputFile(args.inputFile)
+        imageList = parseInputFile(args.folderName+os.sep+args.inputFile)
         title = 'Color by elapsed time'
     else:
         imageList = createImageList(args.folderName,
