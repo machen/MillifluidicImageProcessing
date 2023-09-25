@@ -215,7 +215,7 @@ def main(args) -> int:
         areas.append(imageArea)
         diffImage = generateDiffIm(imageTime, imageMask,
                                    diffImage, initialMaskImage)
-        # Save the mask images. Slow.
+        # Save the mask images. Slow.p
         if args.saveMask:
             plt.imshow(imageMask)
             maskFolder = args.folderName+os.sep+'MaskImages'
@@ -231,11 +231,17 @@ def main(args) -> int:
     fig2, ax2 = plt.subplots()
     plt.plot(times, areas)
     plt.show()
-    fig.savefig(args.folderName+os.sep+'Difference Image.svg', dpi=300)
-    fig2.savefig(args.folderName+os.sep+'Areas.svg', dpi=300)
-    np.save(args.folderName+os.sep+'DiffImage.npy', diffImage)
-    np.save(args.folderName+os.sep+'elapsedTimes.npy', times)
-    np.save(args.folderName+os.sep+'totalAreas.npy', areas)
+    if args.saveName:
+        saveName = args.saveName
+    elif args.inputFile:
+        saveName = args.inputFile
+    else:
+        saveName = 'Processed'
+    fig.savefig(args.folderName+os.sep+saveName+' Difference Image.svg', dpi=300)
+    fig2.savefig(args.folderName+os.sep+saveName+' Areas.svg', dpi=300)
+    np.save(args.folderName+os.sep+saveName+' DiffImage.npy', diffImage)
+    np.save(args.folderName+os.sep+saveName+' elapsedTimes.npy', times)
+    np.save(args.folderName+os.sep+saveName+' totalAreas.npy', areas)
     return 0
 
 
@@ -250,5 +256,6 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--inputFile', type=str)
     parser.add_argument('-t', '--thresholdArea', type=int)
     parser.add_argument('-m', '--saveMask')
+    parser.add_argument('-n', '--saveName', type=str)
     args = parser.parse_args()
     sys.exit(main(args))
