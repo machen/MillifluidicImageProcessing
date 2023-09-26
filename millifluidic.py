@@ -250,8 +250,8 @@ if __name__ == '__main__':
                             description='Greyscale image processing for millifluidic images',
                             epilog='Currently in development')
     parser.add_argument('folderName')
-    parser.add_argument('fileExt')
     parser.add_argument('nameFilter')
+    parser.add_argument('fileExt')
     parser.add_argument('-c', '--cropImage', nargs=4, type=int)
     parser.add_argument('-f', '--inputFile', type=str)
     parser.add_argument('-t', '--thresholdArea', type=int)
