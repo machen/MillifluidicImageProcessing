@@ -25,7 +25,8 @@ def generateDiffIm(index, image, diffImage, initImage, threshold=50) -> np.ndarr
     image: Image to do next comparison on, should be a binary image
     diffImage: Current diffImage
     initImage: Initial image to compare against
-    threshold: Optional int that specifies the threshold for considering an image different from the initial. Only used if the arrays are not boolean
+    threshold: Optional int that specifies the threshold for considering an image different from the initial.
+               Only used if the arrays are not boolean
 
     Returns
     ------
@@ -37,7 +38,7 @@ def generateDiffIm(index, image, diffImage, initImage, threshold=50) -> np.ndarr
     else:
         diff = (image-initImage) >= threshold
     # Area of image that has not yet changed
-    diffImDelta = diffImage == 0 # Demarcate areas that have not yet changed
+    diffImDelta = diffImage == 0  # Demarcate areas that have not yet changed
     # Element-wise AND of the above set to index of the image
     diffImage[np.logical_and(diff, diffImDelta)] = index
     return diffImage
@@ -47,7 +48,7 @@ def setImageCrop(baseImage) -> tuple[int, int, int, int]:
     # TODO: Should use some other criteria to crop the image, such as user input on a test figure
     x1 = 0
     y1 = 0
-    x2 = baseImage.shape[1] # np.arrays are [row,col]
+    x2 = baseImage.shape[1]  # np.arrays are [row,col]
     y2 = baseImage.shape[0]
     return x1, y1, x2, y2
 
@@ -78,7 +79,7 @@ def imageAlignment(image1, image2):
     Images should be aligned using FIJI (or already aligned)"""
     raise NotImplementedError("Image alignment is too expensive to run on a per-batch basis. Pre-align images.")
     descriptor_extractor = ORB(n_keypoints=20)
-     # Generate Keypoints of first image
+    # Generate Keypoints of first image
     descriptor_extractor.detect_and_extract(image1)
     keyPoint1 = descriptor_extractor.keypoints
     descriptors1 = descriptor_extractor.descriptors
@@ -193,7 +194,7 @@ def main(args) -> int:
     times = []
     for index in imageList.index:
         if args.inputFile:
-             # Color by actual elapsed time if using input file
+            # Color by actual elapsed time if using input file
             imageTime = imageList.loc[index, 'elapsedTime']
         else:
             # Use index of image as proxy for time otherwise
@@ -207,7 +208,7 @@ def main(args) -> int:
         if args.cropImage:
             image = cropImage(image, args.cropImage)
         imageMask = createImageMask(image)
-        threshImage = image*imageMask
+        # threshImage = image*imageMask
         if args.thresholdArea:
             imageArea = calcImageArea(imageMask, image, args.thresholdArea)
         else:

@@ -49,6 +49,7 @@ def main(args)-> int:
             data.to_csv(outputFolder+os.sep+file, encoding='utf-16')
     return 0
 
+
 if __name__ == '__main__':
     parser = ArgumentParser(prog='PIVData',
                             description='Produces Paraview Readable csvs from Dantec PIV data',
