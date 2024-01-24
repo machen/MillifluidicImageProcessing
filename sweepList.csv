@@ -1,0 +1,7 @@
+ExptName, flowRate_mLpmin, alpha, location, fileHandle
+SinG4, 1.25, 90, ..\\Experiments\\SinG4_1_25mLpMin_2022_11_2\\alignedImages\\, cropped
+SinG5, 21.2, 90, ..\\Experiments\\SinG5_21_2mLpMin_2022_11_21\\AlignedImages\\, cropped
+SinG6, 4.5, 90, ..\\Experiments\\SinG6_4.5mLpMin_2022_11_30\\AlignedImages\\,
+SinG7, 1.25, 180, ..\\Experiments\\SinG7_2023_1_27\\alignedImages\\,
+SinG10, 4.5, 0, ..\\Experiments\\SinG10_4.5q\\alignedImages\\, imageListSinG10.csv
+SinG11, 1.25, 0, ..\\Experiments\\SinG11_1.25q\\alignedImages\\, imageListSinG11.csv
