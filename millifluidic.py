@@ -237,7 +237,7 @@ def main(args) -> int:
     else:
         maxPlotValue = float(np.max(diffImage, axis=None))
     plt.imshow(diffImage, cmap='turbo', vmin=minPlotValue, vmax=maxPlotValue)
-    plt.colorbar(label=title+'Full diff image')
+    plt.colorbar(label=title)
     fig3, ax3 = plt.subplots()
     plt.imshow(diffImage*initialMaskImage, cmap='turbo', vmin=minPlotValue, vmax=maxPlotValue)
     plt.colorbar(label=title+'Diff image masked by first image')
@@ -250,7 +250,7 @@ def main(args) -> int:
         saveName = args.inputFile
     else:
         saveName = 'Processed'
-    saveLocation = args.folderNamed+os.sep+saveName
+    saveLocation = args.folderName+os.sep+saveName
     fig.savefig(saveLocation+' Difference Image.svg', dpi=300)
     fig2.savefig(saveLocation+' Areas.svg', dpi=300)
     fig3.savefig(saveLocation+'Initial Masked Difference Image.svg', dpi=300)
