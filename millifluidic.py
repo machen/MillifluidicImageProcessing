@@ -70,7 +70,7 @@ def parseInputFile(inputFile) -> pd.DataFrame:
     """
     data = pd.read_csv(inputFile, header=0, index_col='index')
     data.sort_values(by='elapsedTime', inplace=True)
-    imageList = data.loc[data.use == True, :]
+    imageList = data.loc[data.use, :]
     return imageList
 
 
@@ -227,7 +227,16 @@ def main(args) -> int:
             plt.savefig(maskFolder+os.sep+imFile)
 
     fig, ax = plt.subplots()
-    plt.imshow(diffImage, cmap='turbo')
+    # Set max and min of plot
+    if args.rangeMin:
+        minPlotValue = args.rangeMin
+    else:
+        minPlotValue = 0
+    if args.rangeMax:
+        maxPlotValue = args.rangeMax
+    else:
+        maxPlotValue = float(np.max(diffImage, axis=None))
+    plt.imshow(diffImage, cmap='turbo', vmin=minPlotValue, vmax=maxPlotValue)
     plt.colorbar(label=title)
     fig2, ax2 = plt.subplots()
     plt.plot(times, areas)
@@ -258,5 +267,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--thresholdArea', type=int)
     parser.add_argument('-m', '--saveMask')
     parser.add_argument('-n', '--saveName', type=str)
+    parser.add_argument('--rangeMax', type=float)
+    parser.add_argument('--rangeMin', type=float)
     args = parser.parse_args()
     sys.exit(main(args))

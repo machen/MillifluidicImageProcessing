@@ -7,6 +7,11 @@ from argparse import ArgumentParser
 import pandas as pd
 
 
+"""Formal script for sweeping through all of the data,
+however, this is likely not worth the time right now compared
+to modifying the current script."""
+
+
 class dataSet:
 
     def __init__(self, listing):
