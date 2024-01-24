@@ -5,11 +5,10 @@ import os
 import re
 from argparse import ArgumentParser
 import numpy as np
-import skimage as sk
 from skimage.io import imread
 from skimage.filters import threshold_isodata
 from skimage.transform import estimate_transform, warp
-from skimage.measure import label
+from skimage.measure import label, regionprops
 import matplotlib.pyplot as plt
 from skimage import feature
 import pandas as pd
@@ -164,7 +163,7 @@ def calcImageArea(mask, image, areaThresh=1000) -> float:
     label_img = label(mask)
     # footprint = disk(10)
     # res = white_tophat(mask, footprint)
-    fullProps = sk.measure.regionprops(label_img, intensity_image=image)
+    fullProps = regionprops(label_img, intensity_image=image)
     selectProps = []
     totalArea = 0
     for region in fullProps:
