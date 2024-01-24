@@ -237,7 +237,10 @@ def main(args) -> int:
     else:
         maxPlotValue = float(np.max(diffImage, axis=None))
     plt.imshow(diffImage, cmap='turbo', vmin=minPlotValue, vmax=maxPlotValue)
-    plt.colorbar(label=title)
+    plt.colorbar(label=title+'Full diff image')
+    fig3, ax3 = plt.subplots()
+    plt.imshow(diffImage*initialMaskImage, cmap='turbo', vmin=minPlotValue, vmax=maxPlotValue)
+    plt.colorbar(label=title+'Diff image masked by first image')
     fig2, ax2 = plt.subplots()
     plt.plot(times, areas)
     plt.show()
@@ -247,11 +250,14 @@ def main(args) -> int:
         saveName = args.inputFile
     else:
         saveName = 'Processed'
-    fig.savefig(args.folderName+os.sep+saveName+' Difference Image.svg', dpi=300)
-    fig2.savefig(args.folderName+os.sep+saveName+' Areas.svg', dpi=300)
-    np.save(args.folderName+os.sep+saveName+' DiffImage.npy', diffImage)
-    np.save(args.folderName+os.sep+saveName+' elapsedTimes.npy', times)
-    np.save(args.folderName+os.sep+saveName+' totalAreas.npy', areas)
+    saveLocation = args.folderNamed+os.sep+saveName
+    fig.savefig(saveLocation+' Difference Image.svg', dpi=300)
+    fig2.savefig(saveLocation+' Areas.svg', dpi=300)
+    fig3.savefig(saveLocation+'Initial Masked Difference Image.svg', dpi=300)
+    np.save(saveLocation+' diffImage.npy', diffImage)
+    np.save(saveLocation+' elapsedTimes.npy', times)
+    np.save(saveLocation+' totalAreas.npy', areas)
+    np.save(saveLocation+' initialMaskImage.npy', initialMaskImage)
     return 0
 
 
@@ -262,7 +268,8 @@ if __name__ == '__main__':
     parser.add_argument('folderName')
     parser.add_argument('nameFilter')
     parser.add_argument('fileExt')
-    parser.add_argument('-c', '--cropImage', nargs=4, type=int)
+    parser.add_argument('-c', '--cropImage', nargs=4, type=int,
+                        help="Use np matrix format with origin in top left corner, giving coords x1 x2 y1 y2")
     parser.add_argument('-f', '--inputFile', type=str)
     parser.add_argument('-t', '--thresholdArea', type=int)
     parser.add_argument('-m', '--saveMask')
