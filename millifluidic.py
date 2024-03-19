@@ -178,9 +178,11 @@ def main(args) -> int:
     if args.inputFile:
         imageList = parseInputFile(args.folderName+os.sep+args.inputFile)
         title = 'Color by elapsed time'
-    else:
+    elif args.manualList:
+        fileExt = args.manualList[1]
+        nameFilter = args.manualList[0]
         imageList = createImageList(args.folderName,
-                                    args.fileExt, args.nameFilter)
+                                    fileExt, nameFilter)
         title = 'Color by index'
     firstImage = imageList.loc[imageList.index.min(), 'imageFile']
     initIm = imread(args.folderName+os.sep+firstImage, as_gray=True)
@@ -264,13 +266,18 @@ if __name__ == '__main__':
     parser = ArgumentParser(prog='millifluidic',
                             description='Greyscale image processing for millifluidic images',
                             epilog='Currently in development')
-    parser.add_argument('folderName')
-    parser.add_argument('nameFilter')
-    parser.add_argument('fileExt')
-    parser.add_argument('-c', '--cropImage', nargs=4, type=int,
+    parser.add_argument('folderName',
+                        help="Folder location containing images and image list, if using")
+    parser.add_argument('-f', '--inputFile', type=str,
+                        help="csv containing the list of files, see template")
+    parser.add_argument('-l', '--manualList', nargs=2,
+                        default=['*.', '.tif'],
+                        help="2 args, First is a regex string matching the file names, Second is file extension. Used if no other data for the list of images is given.")
+    parser.add_argument('-c', '--cropImage',
+                        nargs=4, type=int,
                         help="Use np matrix format with origin in top left corner, giving coords x1 x2 y1 y2")
-    parser.add_argument('-f', '--inputFile', type=str)
-    parser.add_argument('-t', '--thresholdArea', type=int)
+    parser.add_argument('-t', '--thresholdArea', type=int,
+                        help="Minimum area for identifying thresholded areas. Use to filter out small objects.")
     parser.add_argument('-m', '--saveMask')
     parser.add_argument('-n', '--saveName', type=str)
     parser.add_argument('--rangeMax', type=float)
