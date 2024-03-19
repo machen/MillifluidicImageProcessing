@@ -271,7 +271,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--inputFile', type=str,
                         help="csv containing the list of files, see template")
     parser.add_argument('-l', '--manualList', nargs=2,
-                        default=['*.', '.tif'],
+                        default=['.*', '.tif'],
                         help="2 args, First is a regex string matching the file names, Second is file extension. Used if no other data for the list of images is given.")
     parser.add_argument('-c', '--cropImage',
                         nargs=4, type=int,
