@@ -175,6 +175,7 @@ def calcImageArea(mask, image, areaThresh=1000) -> float:
 
 def main(args) -> int:
     plt.rcParams['svg.fonttype'] = 'none'  # Need to output fonts correctly
+    title = ''  # Bind empty string to title just in case
     if args.inputFile:
         imageList = parseInputFile(args.folderName+os.sep+args.inputFile)
         title = 'Color by elapsed time'
@@ -272,7 +273,8 @@ if __name__ == '__main__':
                         help="csv containing the list of files, see template")
     parser.add_argument('-l', '--manualList', nargs=2,
                         default=['.*', '.tif'],
-                        help="2 args, First is a regex string matching the file names, Second is file extension. Used if no other data for the list of images is given.")
+                        help="""2 args, First is a regex string matching the file names, Second is file extension.
+                                Used if no other data for the list of images is given.""")
     parser.add_argument('-c', '--cropImage',
                         nargs=4, type=int,
                         help="Use np matrix format with origin in top left corner, giving coords x1 x2 y1 y2")
